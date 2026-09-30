@@ -1,11 +1,12 @@
 package com.example.ledger;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SettlementService {
@@ -30,8 +31,18 @@ public class SettlementService {
             throw new MerchantNotFoundException(merchantId);
         }
         long total = payments.stream().mapToLong(PaymentEntity::getAmountMinor).sum();
-        long fee = BigDecimal.valueOf(total).multiply(feeRate)
+        return calculateNet(total, feeRate);
+    }
+
+    /**
+     * Pure calculation, no I/O — extracted so it can be benchmarked and
+     * unit tested without a database. Stays on long minor units and
+     * BigDecimal throughout; never double, since binary floating point
+     * cannot represent a money value exactly.
+     */
+    public static long calculateNet(long totalMinor, BigDecimal feeRate) {
+        long fee = BigDecimal.valueOf(totalMinor).multiply(feeRate)
                 .setScale(0, RoundingMode.DOWN).longValueExact();
-        return total - fee;
+        return totalMinor - fee;
     }
 }
