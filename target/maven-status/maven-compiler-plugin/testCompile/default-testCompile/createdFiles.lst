@@ -1,1 +1,2 @@
 com\example\ledger\PaymentControllerIT.class
+com\example\ledger\LookupTableConcurrencyTest.class
